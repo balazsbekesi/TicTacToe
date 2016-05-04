@@ -86,7 +86,7 @@ public class Game {
 				nextMovePost(nextMove.x, nextMove.y);
 				enemyStartedMyFirstRound = false;
 
-				Thread.sleep(500);
+				Thread.sleep(50);
 			} else if (!myTurn.getBoolean("isMyTurn") && myTurn.getInt("statusCode") != 100) {
 				System.out.println("Not my turn, waiting for opponent...");
 				Thread.sleep(500);

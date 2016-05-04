@@ -13,8 +13,8 @@ public class Strategy {
 	private final int ME = 1;
 	private final int ENEMY = 2;
 
-	private static final int ONE_STEP_TO_WIN_PREF = 2_500_000;
-	private static final int ONE_STEP_TO_WIN = 1_500_000;
+	private static final int ONE_STEP_TO_WIN_PREF = 10_500_000;
+	private static final int ONE_STEP_TO_WIN = 3_500_000;
 	private static final int ONE_STEP_TO_WIN_LOWER = 1_000_000;
 
 	private static final int TWO_STEP_TO_WIN_PREF = 210_000;
@@ -23,7 +23,7 @@ public class Strategy {
 
 	private static final int THREE_STEP_TO_WIN_PREF = 1_500;
 	private static final int THREE_STEP_TO_WIN = 1_000;
-	private static final int FOUR_STEP_TO_WIN = 10;
+	private static final int FOUR_STEP_TO_WIN = 0;
 	// private int[][] map;
 
 	private Point enemyLastMove;
@@ -130,17 +130,27 @@ public class Strategy {
 			System.out.println("Defend!");
 			ArrayList<Point> possiblePositions = new ArrayList<>();
 
-			for (int i = TEST; i < map.length - TEST; i++) {
-				for (int j = TEST; j < map[0].length - TEST; j++) {
+			int maxStateToEnemy = enemyStateBeforeWePick;
+			Point ruinPoint = new Point(0, 0);
+
+			for (int i = 0; i < map.length; i++) {
+				for (int j = 0; j < map[0].length; j++) {
 					if (map[i][j] == EMPTY) {
-						map[i][j] = ME;
-						int enemyNewState = calculateState(ENEMY, ME);
-						if (enemyNewState < TWO_STEP_TO_WIN) {
-							possiblePositions.add(new Point(i, j));
+						map[i][j] = ENEMY;
+						int calculateStateEnemy = calculateState(ENEMY, ME);
+
+						if (calculateStateEnemy > maxStateToEnemy) {
+							maxStateToEnemy = calculateStateEnemy;
+							ruinPoint = new Point(i, j);
 						}
 						map[i][j] = EMPTY;
 					}
 				}
+			}
+
+			if (maxStateToEnemy >= TWO_STEP_TO_WIN * 2) {
+				System.out.println("Ruin defense");
+				return ruinPoint;
 			}
 
 			int myBestState = 0;
@@ -183,12 +193,13 @@ public class Strategy {
 			return optimalPoint;
 		}
 
-
 		int maximum = 0;
 		Point maximumPoint = new Point();
-		ArrayList<Point> possiblePositions = new ArrayList<>();
+
 
 		int maxStateToEnemy = enemyStateBeforeWePick;
+		int maxMyStateNow = myStateBeforeWePick;
+
 		Point ruinPoint = new Point(0, 0);
 
 		for (int i = 0; i < map.length; i++) {
@@ -202,16 +213,26 @@ public class Strategy {
 						ruinPoint = new Point(i, j);
 					}
 					map[i][j] = EMPTY;
+					map[i][j] = ME;
+
+					int calculateStateMe = calculateState(ME, ENEMY);
+					if (calculateStateMe > maxMyStateNow) {
+						maxMyStateNow = calculateStateMe;
+					}
+					map[i][j] = EMPTY;
 				}
 			}
 		}
 
-		if (maxStateToEnemy >= TWO_STEP_TO_WIN * 2) {
-			System.out.println("Ruin defense");
-			return ruinPoint;
+		if (maxStateToEnemy > maxMyStateNow) {
+			if (maxStateToEnemy >= TWO_STEP_TO_WIN * 2) {
+				System.out.println("Ruin defense");
+				return ruinPoint;
+			}
 		}
-
+		
 		System.out.println("Attack!");
+		ArrayList<Point> possiblePositions = new ArrayList<>();
 		for (int i = TEST; i < map.length - TEST; i++) {
 			for (int j = TEST; j < map[0].length - TEST; j++) {
 				if (map[i][j] == EMPTY) {
@@ -306,7 +327,7 @@ public class Strategy {
 				int countOpenGridThree = countOpenGridThree(myToe, i, j);
 
 				if (countOpenGridThree == 1) {
-					state += THREE_STEP_TO_WIN_PREF;
+					state += THREE_STEP_TO_WIN;
 				}
 				if (countOpenGridThree >= 2) {
 					state += TWO_STEP_TO_WIN_PREF;
@@ -322,10 +343,14 @@ public class Strategy {
 		points[2] = countOneStepsToWinLowerPiority(myToe) * ONE_STEP_TO_WIN_LOWER; // grid
 
 		points[3] = countTwoStepsToWinStatesPref(myToe) * TWO_STEP_TO_WIN_PREF; // open
+		if(points[3]>=2){
+			state+=ONE_STEP_TO_WIN_LOWER;
+		}
+		
 		points[4] = countTwoStepsToWinStates(myToe) * TWO_STEP_TO_WIN; // open 3
 		points[5] = countClosedThrees(myToe, enemyToe) * TWO_STEP_TO_WIN_LOWER;
 
-		points[6] = countOpenThreeStepsStates(myToe) * THREE_STEP_TO_WIN;
+		points[6] = countOpenThreeStepsStates(myToe) * THREE_STEP_TO_WIN_PREF;
 		points[7] = countOpenFourStepsStates(myToe) * FOUR_STEP_TO_WIN;
 
 		for (int i = 0; i < points.length; i++) {
